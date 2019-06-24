@@ -1,0 +1,15 @@
+log-dhcp
+enable-tftp
+tftp-root=/srv/tftp
+
+# Enable DHCP proxy replies - don't hand out addresses, just send boot info
+dhcp-range={IPADDRESS},proxy,{NETMASK}
+
+# Tag MAC addresses belonging to raspberry pis
+dhcp-host=b8:27:eb:*:*:*,set:rpi
+
+# Ignore anything that isn't tagged as a known host
+dhcp-ignore=tag:!known
+
+# Boot raspberry pis from bootcode.bin in the tftp directory
+pxe-service=x86PC,"Raspberry Pi Boot",bootcode.bin

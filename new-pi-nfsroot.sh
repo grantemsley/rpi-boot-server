@@ -1,0 +1,72 @@
+#!/bin/bash
+# This script creates a new root filesystem for a PI under /srv/nfs, based on an already extracted image in /srv/images
+set -euo pipefail
+
+echo '----------------------------------------------------'
+echo 'Create new PI filesystem based on an extracted image'
+echo '----------------------------------------------------'
+echo
+
+PS3="Select the base image to use: "
+select IMAGEDIR in $(find /srv/images/ -maxdepth 1 -mindepth 1 -type d)
+do
+    if [[ "$IMAGEDIR" == "" ]]; then
+        echo "'$REPLY' is not a valid number"
+        continue
+    fi
+
+    echo
+    echo "Using $IMAGEDIR as the base"
+    break
+done
+
+echo
+echo
+echo "The nfsroot for the new RPi will be created under /srf/nfs/<name>"
+echo "The folder name will also be used as the hostname for the OS"
+echo -ne "Name for new directory/hostname: "
+read NEWDIR
+
+if [[ -z "/srv/nfs/$NEWDIR" ]]; then
+    echo "No name specified, exiting..."
+    exit 1
+fi
+
+if [[ -e "/srv/nfs/$NEWDIR" ]]; then
+    echo "$NEWDIR already exists, canceling..."
+    exit 2
+fi
+
+echo "Using /srv/nfs/${NEWDIR} for the nfsroot"
+
+echo
+echo "Copying ${IMAGEDIR} to /srv/nfs/${NEWDIR}"
+mkdir "/srv/nfs/${NEWDIR}"
+rsync -aAx --numeric-ids "${IMAGEDIR}/" "/srv/nfs/${NEWDIR}"
+
+OLDHOSTNAME=$(cat "/srv/nfs/${NEWDIR}/etc/hostname")
+echo "Changing hostname from ${OLDHOSTNAME} to ${NEWDIR}"
+sed -i "s/$OLDHOSTNAME/$NEWDIR/g" "/srv/nfs/${NEWDIR}/etc/hostname"
+sed -i "s/$OLDHOSTNAME/$NEWDIR/g" "/srv/nfs/${NEWDIR}/etc/hosts"
+
+echo "Fixing cmdline.txt to use nfsroot"
+IPADDRESS=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{print $2}')
+cp "/srv/nfs/${NEWDIR}/boot/cmdline.txt" "/srv/nfs/${NEWDIR}/boot/cmdline.original"
+echo "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${IPADDRESS}:/srv/nfs/${NEWDIR},udp,v3 rw ip=dhcp rootwait elevator=deadline rootfstype=nfs" > "/srv/nfs/${NEWDIR}/boot/cmdline.txt"
+
+echo "Removing SD card mount points"
+# remove /boot mount
+sed -i "s#.*/boot\s.*##g" "/srv/nfs/${NEWDIR}/etc/fstab"
+# remove / mount (looking for / with a whitespace character after it)
+sed -i "s#.*/\s.*##g" "/srv/nfs/${NEWDIR}/etc/fstab"
+
+echo "Enabling SSH service"
+touch "/srv/nfs/${NEWDIR}/boot/ssh"
+
+
+
+
+
+echo "----------------------------------------------------------------"
+echo "New RPi image for ${NEWDIR} is ready to be assigned to a device."
+echo "----------------------------------------------------------------"
