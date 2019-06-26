@@ -28,7 +28,8 @@ function echogreen() {
 function _installpackages() {
     echogreen "Installing packages for dnsmasq and nfs server..."
     apt-get -y -f install dnsmasq nfs-kernel-server nfs-common unzip wget kpartx
-    #apt-get install qemu qemu-user-static binfmr-support 
+    # Don't install these automatically - chrootpi script will check for them and install if needed.
+    #apt-get install qemu qemu-user-static binfmt-support 
 }
 
 function _makedirectories() {
@@ -148,6 +149,7 @@ else
     echo 
     echo "Use 'extract-image <image file> <name>' to extract SD card images to /srv/images"
     echo "Use 'new-nfsroot' to copy an extracted image to /srv/nfs to create the filesystem for a specific Pi."
+    echo "Use 'chrootpi' to enter an image or NFSroot and do things like change passwords or run raspi-config"
     echo "Use 'assign-nfsroot' to assign that images to a Pi. You must attempt network booting the Pi first so the serial number can be detected."
 fi
 

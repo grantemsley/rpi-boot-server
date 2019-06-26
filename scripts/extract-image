@@ -43,9 +43,9 @@ if fail_if_stderr kpartx -s -a -r -v "$1"; then
 
     mkdir "/srv/images/$2"
     echo "Copying root partition"
-    rsync -aAX --numeric-ids /tmp/root "/srv/images/$2"
+    rsync -aAX --numeric-ids /tmp/root/ "/srv/images/$2"
     echo "Copying boot partition"
-    rsync -aAX --numeric-ids /tmp/boot "/srv/images/$2/boot"
+    rsync -aAX --numeric-ids /tmp/boot/ "/srv/images/$2/boot"
 
     umount /tmp/boot
     umount /tmp/root

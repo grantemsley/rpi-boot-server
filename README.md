@@ -54,4 +54,10 @@ It will prompt you to select the serial number of a Pi that hasn't been assigned
 
 If you are replacing a Pi with a new one and want to reuse the existing NFS root, you'll need to delete the symlink in /srv/tftp first.
 
+### chrootpi
 
+chroots into the root of an image or nfsroot.  From there you can run commands as if you were on the Pi system itself.
+
+Useful for changing passwords in images, installing/updating packages with apt-get, or running raspi-config.
+
+The script will automatically install qemu and other packages required to let you run ARM binaries on an Intel machine.

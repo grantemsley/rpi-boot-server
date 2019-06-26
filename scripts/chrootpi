@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Check that needed packages are installed
+if ! dpkg-query -W --showformat='${Status}\n' binfmt-support | grep -q 'install ok installed'; then
+    apt-get install -y binfmt-support
+fi
+if ! dpkg-query -W --showformat='${Status}\n' qemu-user-static | grep -q 'install ok installed'; then
+    apt-get install -y qemu-user-static
+fi
+if ! dpkg-query -W --showformat='${Status}\n' qemu | grep -q 'install ok installed'; then
+    apt-get install -y qemu
+fi
+
+
+
+echo "Do you want to chroot to a base image, or the NFS root for a specific PI?"
+echo
+PS3="Select type: "
+select TYPE in 'Base image' 'NFS root'
+do
+    if [[ "$TYPE" == "" ]]; then
+        echo "'$REPLY' is not a valid number."
+        continue
+    fi
+
+    break
+done
+
+if [ "$TYPE" == "Base image" ]; then
+    DIRS=($(find /srv/images -maxdepth 1 -mindepth 1 -type d))
+    PS3="Select image to chroot to: "
+else 
+    DIRS=($(find /srv/nfs -maxdepth 1 -mindepth 1 -type d))
+    PS3="Select NFSroot to chroot to: "
+fi
+
+echo
+select DIR in ${DIRS[*]}
+do
+    if [[ "$DIR" == "" ]]; then
+        echo "'$REPLY' is not a valid number."
+        continue
+    fi
+
+    echo "CHROOTing to $DIR"
+    break
+done
+
+# Comment out lines in ld.so.preload since they won't be compatible with our CPU architecture
+sed -i 's/^/#CHROOT /g' "$DIR/etc/ld.so.preload"
+# Copy the qemu library that lets us run ARM executables on x86/x64
+cp /usr/bin/qemu-arm-static "$DIR/usr/bin/"
+
+echo "Entering bash shell within $DIR"
+echo "Anything you run here will use the RPi's binaries"
+echo "Use 'exit' when finished"
+
+chroot "$DIR" /bin/bash
+
+echo "Cleaning up from chroot"
+sed -i 's/^#CHROOT //g' "$DIR/etc/ld.so.preload"
+rm "$DIR/usr/bin/qemu-arm-static"
