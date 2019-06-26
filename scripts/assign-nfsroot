@@ -35,7 +35,7 @@ clear
 echo "-----------------------------"
 echo "Recent network boot attempts:"
 echo "-----------------------------"
-cat syslog | grep '/srv/tftp/.*/start.elf'
+cat /var/log/syslog | grep '/srv/tftp/.*/start.elf'
 echo
 echo
 echo "If the RPi you want to assign does not appear in the list, quit this script and try network booting it first."
