@@ -22,7 +22,7 @@ done
 
 echo
 echo
-echo "The nfsroot for the new RPi will be created under /srf/nfs/<name>"
+echo "The nfsroot for the new RPi will be created under /srv/nfs/<name>"
 echo "The folder name will also be used as the hostname for the OS"
 echo -ne "Name for new directory/hostname: "
 read NEWDIR
@@ -69,4 +69,5 @@ touch "/srv/nfs/${NEWDIR}/boot/ssh"
 
 echo "----------------------------------------------------------------"
 echo "New RPi image for ${NEWDIR} is ready to be assigned to a device."
+echo "Use assign-nfsroot.sh to assign it.
 echo "----------------------------------------------------------------"
