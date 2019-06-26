@@ -46,8 +46,8 @@ function _configurednsmasq() {
 
 function _downloadraspbian() {
     echogreen "Downloading latest Raspbian Lite image (this may take a few minutes)"
-    #wget https://downloads.raspberrypi.org/raspbian_lite_latest -O /tmp/raspbian_lite_latest.zip
-    cp /root/raspbian_lite_latest /tmp/raspbian_lite_latest.zip
+    wget https://downloads.raspberrypi.org/raspbian_lite_latest -O /tmp/raspbian_lite_latest.zip
+    #cp /root/raspbian_lite_latest /tmp/raspbian_lite_latest.zip
 
     echogreen "Unzipping image to /srv/images"
     unzip -uo /tmp/raspbian_lite_latest.zip -d /srv/images
@@ -111,6 +111,11 @@ function _restartservices() {
 
 }
 
+function _copyscripts() {
+    echogreen "Copying scripts to /usr/local/bin"
+    cp $SCRIPTDIR/scripts/* /usr/local/bin/
+}
+
 
 ###############
 # Main script #
@@ -135,8 +140,15 @@ else
     _extractimage
     _configurenfs
     _restartservices
+    _copyscripts
     
-
+    echo
+    echo
+    echo "Server is ready to start network booting Raspberry Pis."
+    echo 
+    echo "Use 'extract-image <image file> <name>' to extract SD card images to /srv/images"
+    echo "Use 'new-nfsroot' to copy an extracted image to /srv/nfs to create the filesystem for a specific Pi."
+    echo "Use 'assign-nfsroot' to assign that images to a Pi. You must attempt network booting the Pi first so the serial number can be detected."
 fi
 
 

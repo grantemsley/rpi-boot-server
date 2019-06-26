@@ -1,0 +1,63 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+    echo 'Usage: extract-image.sh <image file> <name>'
+    exit 1
+fi
+
+if [ ! -f "$1" ]; then
+    echo "File '$1' does not exist."
+    exit 1
+fi
+
+if [ -e "/srv/images/$2" ]; then
+    echo "Directory '/srv/images/$2' already exists."
+    exit 1
+fi
+
+
+
+# kpartx doesn't set it's exit code to non-zero when it fails.
+# This function determines if anything was written to stderr and sets a non-zero exit code if it was.
+fail_if_stderr() (
+  rc=$({
+    ("$@" 2>&1 >&3 3>&- 4>&-; echo "$?" >&4) |
+    grep '^' >&2 3>&- 4>&-
+  } 4>&1)
+  err=$?
+  [ "$rc" -eq 0 ] || exit "$rc"
+  [ "$err" -ne 0 ] || exit 125
+) 3>&1
+
+
+if fail_if_stderr kpartx -s -a -r -v "$1"; then
+    LOOPDEV=$(losetup -j "$1" | sed -n 's/.*\(loop[0-9]\).*/\1/p')
+    echo "Image file mapped to ${LOOPDEV}"
+
+    if [[ ! -d /tmp/root ]]; then mkdir /tmp/root; fi
+    mount -o ro "/dev/mapper/${LOOPDEV}p2" /tmp/root
+
+    if [[ ! -d /tmp/boot ]]; then mkdir /tmp/boot; fi
+    mount -o ro "/dev/mapper/${LOOPDEV}p1" /tmp/boot
+
+    mkdir "/srv/images/$2"
+    echo "Copying root partition"
+    rsync -aAX --numeric-ids /tmp/root "/srv/images/$2"
+    echo "Copying boot partition"
+    rsync -aAX --numeric-ids /tmp/boot "/srv/images/$2/boot"
+
+    umount /tmp/boot
+    umount /tmp/root
+    rmdir /tmp/boot
+    rmdir /tmp/root
+
+    echo "Image extracted to /srv/images/$2"
+else
+    echo "Failed to mount image. File may be corrupt or not an image file."
+fi
+
+# Either way kpartx creates a loop device, so be sure to remove it.
+kpartx -s -d "$1" >/dev/null 2>&1
+
+

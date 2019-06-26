@@ -1,0 +1,98 @@
+#!/bin/bash
+set -euo pipefail
+
+# Get a list of all RPis that have recently tried to boot by looking for them requesting start.elf from the tftp server
+# Extract the serial number of the RPi from the request.
+
+PISERIALS=($(cat /var/log/syslog | sed -n -e 's#.*/srv/tftp/\(.*\)/start.elf.*#\1#p' | sort | uniq))
+
+
+if [ ${#PISERIALS[@]} -eq 0 ]; then
+    echo "No raspberry pis have tried to network boot recently."
+    echo "Try network booting the one you want to assign so we can detect it's serial number."
+    echo "Then rerun this script."
+    exit 1
+fi
+
+# Remove any serials that have already been assigned (have a symlink in /srv/tftp)
+UNASSIGNEDSERIALS=()
+
+for i in ${PISERIALS[@]}; do
+	if [ ! -e "/srv/tftp/$i" ]; then
+		UNASSIGNEDSERIALS+=($i)
+	fi
+done
+
+if [ ${#UNASSIGNEDSERIALS[@]} -eq 0 ]; then
+    echo "All PIs that have network booted recenlty are already assigned to an NFS root."
+    echo "Try network booting the one you want to assign so we can detect it's serial number."
+    echo "Then rerun this script."
+    exit 1
+fi
+
+# Show the actual logs to make it easier to match up a PI trying to boot to a serial number
+clear
+echo "-----------------------------"
+echo "Recent network boot attempts:"
+echo "-----------------------------"
+cat syslog | grep '/srv/tftp/.*/start.elf'
+echo
+echo
+echo "If the RPi you want to assign does not appear in the list, quit this script and try network booting it first."
+
+COLUMNS=1
+PS3="Select the PI serial number to assign or Q to quit: "
+select SERIAL in ${UNASSIGNEDSERIALS[*]}
+do
+    if [[ "${REPLY,,}" == "q" ]]; then
+        echo "Quitting"
+        exit 1
+    fi
+
+    if [[ "$SERIAL" == "" ]]; then
+        echo "'$REPLY' is not a valid number."
+        continue
+    fi
+
+    echo "Using RPi with serial number $SERIAL"
+    break
+done
+
+# Now make a list of all the unassigned directories in /srv/nfs 
+NFSROOTS=($(find /srv/nfs -maxdepth 1 -mindepth 1 -type d | sed -n -e 's#/srv/nfs/\(.*\)$#\1#p'))
+UNASSIGNEDNFSROOTS=()
+for d in ${NFSROOTS[@]}; do
+    # find all the symlinks in /srv/tftp, use readlink to get the target of the link, parse out the directory part.
+    # the tail in there prevents signal 13/broken pipe errors when grep exists before find has output all its data
+    if ! find /srv/tftp -type l -exec readlink -f {} \; | tail -n +1 | grep -q "^/srv/nfs/$d/boot$"; then
+        UNASSIGNEDNFSROOTS+=($d)
+    fi
+done
+
+if [ ${#UNASSIGNEDNFSROOTS[@]} -eq 0 ]; then
+    echo "There are no unassigned NFS root directories available."
+    echo "Create a new one first using new-nfsroot.sh"
+    exit 1
+fi
+
+echo
+echo
+PS3="Select the NFS root to assign to this PI: "
+select NFSROOT in ${UNASSIGNEDNFSROOTS[*]}
+do
+    if [[ "$NFSROOT" == "" ]]; then
+        echo "'$REPLY' is not a valid number."
+        continue
+    fi
+
+    echo "Assigning $SERIAL to /srv/nfs/$NFSROOT"
+    break
+done
+
+
+ln -s "/srv/nfs/$NFSROOT/boot" "/srv/tftp/$SERIAL"
+echo "Symlink created from /srv/nfs/$NFSROOT/boot to /srv/tftp/$SERIAL"
+echo "PI is ready to be booted."
+echo
+echo
+

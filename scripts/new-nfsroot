@@ -69,5 +69,5 @@ touch "/srv/nfs/${NEWDIR}/boot/ssh"
 
 echo "----------------------------------------------------------------"
 echo "New RPi image for ${NEWDIR} is ready to be assigned to a device."
-echo "Use assign-nfsroot.sh to assign it.
+echo "Use assign-nfsroot.sh to assign it."
 echo "----------------------------------------------------------------"
