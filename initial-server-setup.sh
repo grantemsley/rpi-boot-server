@@ -42,6 +42,8 @@ function _makedirectories() {
 function _configurednsmasq() {
     echogreen "Configuring Dnsmasq to respond only to Raspberry Pis"
     sed -e "s/{IPADDRESS}/${IPADDRESS}/" -e "s/{NETMASK}/${NETMASK}/" ${SCRIPTDIR}/config/rpiboot > /etc/dnsmasq.d/rpiboot
+    echogreen "Disabling DNS features of dnsmasq to prevent conflicts with systemd-resolved"
+    echo "DNSMASQ_OPTS=\"-p0\"" >> /etc/default/dnsmasq
 
 }
 
