@@ -36,16 +36,16 @@ if fail_if_stderr kpartx -s -a -r -v "$1"; then
     echo "Image file mapped to ${LOOPDEV}"
 
     if [[ ! -d /tmp/root ]]; then mkdir /tmp/root; fi
-    mount -o ro "/dev/mapper/${LOOPDEV}p2" /tmp/root
+    mount -o ro,noload "/dev/mapper/${LOOPDEV}p2" /tmp/root
 
     if [[ ! -d /tmp/boot ]]; then mkdir /tmp/boot; fi
     mount -o ro "/dev/mapper/${LOOPDEV}p1" /tmp/boot
 
     mkdir "/srv/images/$2"
     echo "Copying root partition"
-    rsync -aAX --numeric-ids /tmp/root/ "/srv/images/$2"
+    rsync -aAHX --numeric-ids /tmp/root/ "/srv/images/$2"
     echo "Copying boot partition"
-    rsync -aAX --numeric-ids /tmp/boot/ "/srv/images/$2/boot"
+    rsync -aAHX --numeric-ids /tmp/boot/ "/srv/images/$2/boot"
 
     umount /tmp/boot
     umount /tmp/root

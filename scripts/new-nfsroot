@@ -42,7 +42,7 @@ echo "Using /srv/nfs/${NEWDIR} for the nfsroot"
 echo
 echo "Copying ${IMAGEDIR} to /srv/nfs/${NEWDIR}"
 mkdir "/srv/nfs/${NEWDIR}"
-rsync -aAx --numeric-ids "${IMAGEDIR}/" "/srv/nfs/${NEWDIR}"
+rsync -aAHx --numeric-ids "${IMAGEDIR}/" "/srv/nfs/${NEWDIR}"
 
 OLDHOSTNAME=$(cat "/srv/nfs/${NEWDIR}/etc/hostname")
 echo "Changing hostname from ${OLDHOSTNAME} to ${NEWDIR}"
