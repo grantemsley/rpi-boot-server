@@ -53,7 +53,7 @@ echo "Fixing cmdline.txt to use nfsroot"
 IPADDRESS=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{print $2}')
 cp "/srv/nfs/${NEWDIR}/boot/cmdline.txt" "/srv/nfs/${NEWDIR}/boot/cmdline.original"
 sed -i "s#rootfstype=ext4#rootfstype=nfs#g" "/srv/nfs/${NEWDIR}/boot/cmdline.txt"
-sed -i "s#root=[[:graph:]]*#root=/dev/nfs nfsroot=${IPADDRESS}:/srv/nfs/${NEWDIR},udp,v3 rw ip=dhcp rootwait#g" "/srv/nfs/${NEWDIR}/boot/cmdline.txt"
+sed -i "s#root=[[:graph:]]*#root=/dev/nfs nfsroot=${IPADDRESS}:/srv/nfs/${NEWDIR},vers=3 rw ip=dhcp rootwait#g" "/srv/nfs/${NEWDIR}/boot/cmdline.txt"
 sed -i "s#init=/usrlib/raspi-config/init_resize.sh##g" "/srv/nfs/${NEWDIR}/boot/cmdline.txt"
 
 echo "Removing SD card mount points"
